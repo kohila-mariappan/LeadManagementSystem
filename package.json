@@ -1,0 +1,27 @@
+{
+  "name": "leadmanagement",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "lead",
+    "leadmanagement"
+  ],
+  "author": "KOHILA",
+  "license": "ISC",
+  "dependencies": {
+    "@sequelize/core": "^7.0.0-alpha.37",
+    "@sequelize/mssql": "^7.0.0-alpha.41",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "mssql": "^10.0.2",
+    "nodemon": "^3.1.2"
+  }
+}

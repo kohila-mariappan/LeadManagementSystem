@@ -7,6 +7,8 @@ router.post('/creation',LeadController.leadCreation)
 router.get('/list',LeadController.leadsList)
 router.post('/leadDetails',LeadController.LeadDetails)
 router.get('/export',LeadController.LeadExport)
+router.get('/status/list',LeadController.LeadStatusList)
+router.post('/assignto/user',LeadController.AssignToUser)
 
 
 module.exports = router

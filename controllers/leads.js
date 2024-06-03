@@ -8,11 +8,11 @@ const excelJS = require("exceljs");
 
 const leadCreation  = async(req,res) =>{
     try{
-        let {FirstName,LastName,Email,Phone,ProductId} = req.body
+        let {FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress} = req.body
         let findLead = await findOldLead(Email)
         console.log('findLead',findLead,findLead.length)
         if(findLead.length == 0){
-            let creationData = await newLead(FirstName,LastName,Email,Phone,ProductId)
+            let creationData = await newLead(FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress)
         if(creationData.length>0){
             let msg = 'Lead Created Successfully'
             statusCode.successResponseForCreation(res,msg)
@@ -44,9 +44,9 @@ let findOldLead = async(Email) =>{
     }
 }
 
-let newLead = async (FirstName,LastName,Email,Phone,ProductId) =>{
+let newLead = async (FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress) =>{
     try{
-        let data = await db.sequelize.query("EXEC createLeads @first = '"+FirstName+"',@last = '"+LastName+"',@email = '"+Email+"',@phne = '"+Phone+"',@prod = '"+ProductId+"' ",{
+        let data = await db.sequelize.query("EXEC createLeads @first = '"+FirstName+"',@last = '"+LastName+"',@email = '"+Email+"',@phne = '"+Phone+"',@prod = '"+ProductId+"',@loc = '"+LeadLocation+"',@ip = '"+IPAddress+"' ",{
             type: Sequelize.QueryTypes.RAW})
             return data
 
@@ -209,10 +209,106 @@ let LeadUpdate = async(req,res) =>{
     }
 }
 
+let LeadStatusList = async (req,res) =>{
+    try{
+        let data = await allLeadStatus()
+        if(data.length>0){
+            let msg = 'Status List'
+            statusCode.successResponseWithData(res,msg,data)
+        }
+        else{
+            let msg = 'Status are Not Exist'
+            statusCode.successResponse(res,msg)
+        }
+    }catch(err){
+        console.log("Error",err)
+        statusCode.errorResponse(res,err)
+    }
+}
+
+let allLeadStatus = async()=>{
+    try{
+        let data = await db.sequelize.query("EXEC LeadStatusList ",{
+            type: Sequelize.QueryTypes.RAW})
+            return data[0]
+    }catch(err){
+        console.log("Error",err)
+        return err
+    }
+}
+
+
+const AssignToUser = async(req,res) =>{
+    try{
+      let {LeadId,UserId} = req.body      
+      let update = await updateUser(LeadId,UserId)
+      console.log('update',update)
+      if(update.length>0){
+        let msg = 'Lead Assignned to User Successfully'
+        statusCode.successResponseForCreation(res,msg)
+      }else{
+        let msg = 'User Updation Failed'
+        statusCode.successResponse(res,msg)
+      }
+        let userName = await updatedUserName(UserId)
+        console.log('userName',userName)
+        let msg = `Lead Assigned To User-${userName[0].FullName} Successfully`
+        let log = await ActivityLog(LeadId,msg)      
+     }catch(err){
+      console.log("error",err)
+      statusCode.errorResponse(res,err)
+    }
+  }
+
+  let updateUser = async(LeadId,UserId) =>{
+    try{
+      let data = await db.sequelize.query("Exec AssignToUser @lead = '" + LeadId+"',@usr = '"+UserId+"'", {
+        type: Sequelize.QueryTypes.RAW
+       })
+       console.log('dataupdate',data)
+       return data
+    }catch(err){
+      console.log('DB Error',err)
+      return err
+    }  
+  }
+ 
+
+  let updatedUserName = async(UserId) =>{
+    try{
+      let data = await db.sequelize.query("Exec updateUserName @usr = '"+UserId+"'", {
+        type: Sequelize.QueryTypes.RAW
+       })
+       return data[0]
+    }catch(err){
+      console.log('Error',err)
+      return err
+    }
+  
+  }
+
+  let ActivityLog = async(LeadId,msg)=>{
+    try{
+      console.log('data',LeadId,msg)
+      let data = await db.sequelize.query("exec insertLog @lead='"+LeadId+"',@Act='"+msg+"'",{ 
+        type: Sequelize.QueryTypes.RAW
+        })
+       console.log('log',data)
+       return data
+  
+    }catch(err){
+        console.log("DB Error",err)
+        return err
+    }
+  }
+
 module.exports ={
     leadCreation,
     leadsList,
     LeadDetails,
     LeadExport,
-    LeadUpdate
+    LeadUpdate,
+    LeadStatusList,
+    AssignToUser   
+
 }

@@ -302,6 +302,41 @@ const AssignToUser = async(req,res) =>{
     }
   }
 
+  let UpdateLeadDetails = async(req,res) =>{
+    try{
+        let{LeadId,StatusId} = req.body
+        let data = await UpdateDetails(LeadId,StatusId)
+        if(data.length>0){
+            let msg = "Data Updated Successfully"
+            statusCode.successResponseForCreation(res,msg)
+        }else{
+            let msg = "Data Updation Failed"
+            statusCode.successResponse(res,msg)
+        }
+
+    }catch(err){
+        console.log("DBError",err)
+        statusCode.errorResponse(res,err)
+    }
+  }
+
+  let UpdateDetails = async (LeadId,StatusId) =>{
+    try{
+        console.log('data',LeadId,StatusId)
+        let data = await db.sequelize.query("exec updateLeads @lead='"+LeadId+"',@stat='"+StatusId+"'",{ 
+          type: Sequelize.QueryTypes.RAW
+          })
+         console.log('log',data)
+         return data
+    
+      }catch(err){
+          console.log("DB Error",err)
+          return err
+      }
+    
+
+  }
+
 module.exports ={
     leadCreation,
     leadsList,
@@ -309,6 +344,7 @@ module.exports ={
     LeadExport,
     LeadUpdate,
     LeadStatusList,
-    AssignToUser   
+    AssignToUser ,
+    UpdateLeadDetails  
 
 }

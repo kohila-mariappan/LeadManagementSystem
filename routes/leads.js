@@ -10,6 +10,9 @@ router.get('/export',LeadController.LeadExport)
 router.get('/status/list',LeadController.LeadStatusList)
 router.post('/assignto/user',LeadController.AssignToUser)
 router.post('/update/details',LeadController.UpdateLeadDetails)
+router.get('/source/list',LeadController.SourceList)
+router.get('/interaction/type/list',LeadController.interactionTypes)
+
 
 
 module.exports = router

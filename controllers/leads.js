@@ -46,7 +46,9 @@ let findOldLead = async(Email) =>{
 
 let newLead = async (FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress) =>{
     try{
-        let data = await db.sequelize.query("EXEC createLeads @first = '"+FirstName+"',@last = '"+LastName+"',@email = '"+Email+"',@phne = '"+Phone+"',@prod = '"+ProductId+"',@loc = '"+LeadLocation+"',@ip = '"+IPAddress+"' ",{
+        let StatusId = 1
+        let AssignedToUserID = 0
+        let data = await db.sequelize.query("EXEC createLeads @first = '"+FirstName+"',@last = '"+LastName+"',@email = '"+Email+"',@phne = '"+Phone+"',@prod = '"+ProductId+"',@loc = '"+LeadLocation+"',@ip = '"+IPAddress+"',@stat = '"+StatusId+"',@assign = '"+AssignedToUserID+"',",{
             type: Sequelize.QueryTypes.RAW})
             return data
 
@@ -287,40 +289,39 @@ const AssignToUser = async(req,res) =>{
   
   }
 
-  let ActivityLog = async(LeadId,msg)=>{
-    try{
-      console.log('data',LeadId,msg)
-      let data = await db.sequelize.query("exec insertLog @lead='"+LeadId+"',@Act='"+msg+"'",{ 
-        type: Sequelize.QueryTypes.RAW
-        })
-       console.log('log',data)
-       return data
-  
-    }catch(err){
-        console.log("DB Error",err)
-        return err
-    }
-  }
 
   let UpdateLeadDetails = async(req,res) =>{
     try{
-        let{LeadId,StatusId} = req.body
-        let data = await UpdateDetails(LeadId,StatusId)
+        let{LeadId,StatusId,InteractionType,Notes} = req.body
+        let data = await updateLeadStatus(LeadId,StatusId)
         if(data.length>0){
-            let msg = "Data Updated Successfully"
-            statusCode.successResponseForCreation(res,msg)
+            let msg = 'Lead Status Updated Successfully'
+            let statusLog = await ActivityLog(LeadId,msg)
+            let interactiondata = await updateInteractionData(LeadId,InteractionType,Notes)
+            let getId = await getInteractionId()
+            console.log('getId',getId,getId.length)
+            if(getId.length>0){
+                let InteractionId= getId[0].InteractionId
+                let logmsg = "Interaction details Updated Successfully"
+                let interactiondataLog = await InteractionLog(LeadId,InteractionId,logmsg)
+                let msg = 'Lead Details Updated Successfully'
+                statusCode.successResponseForCreation(res,msg)
+            }else{
+                let msg = "Lead Interaction Updated Failed"
+                statusCode.successResponse(res,msg)
+            }
         }else{
-            let msg = "Data Updation Failed"
+            let msg = "Lead Status Updation Failed"
             statusCode.successResponse(res,msg)
         }
 
     }catch(err){
-        console.log("DBError",err)
+        console.log("Error",err)
         statusCode.errorResponse(res,err)
     }
   }
 
-  let UpdateDetails = async (LeadId,StatusId) =>{
+  let updateLeadStatus = async (LeadId,StatusId) =>{
     try{
         console.log('data',LeadId,StatusId)
         let data = await db.sequelize.query("exec updateLeads @lead='"+LeadId+"',@stat='"+StatusId+"'",{ 
@@ -333,7 +334,128 @@ const AssignToUser = async(req,res) =>{
           console.log("DB Error",err)
           return err
       }
+  }
+
+  let updateInteractionData = async(LeadId,InteractionType,Notes) =>{
+    try{
+        console.log('data',LeadId,InteractionType,Notes)
+        let data = await db.sequelize.query("exec insertInteraction @lead='"+LeadId+"',@type='"+InteractionType+"',@note='"+Notes+"'",{ 
+          type: Sequelize.QueryTypes.RAW
+          })
+         console.log('log',data)
+         return data
     
+      }catch(err){
+          console.log("DB Error",err)
+          return err
+      }
+
+  }
+
+  let ActivityLog = async(LeadId,msg)=>{
+    try{
+      console.log('data',LeadId,msg)
+      let data = await db.sequelize.query("exec insertLog @lead='"+LeadId+"',@inter = Null ,@Act='"+msg+"'",{ 
+        type: Sequelize.QueryTypes.RAW
+        })
+       console.log('log',data)
+       return data
+  
+    }catch(err){
+        console.log("DB Error",err)
+        return err
+    }
+  }
+
+  let getInteractionId = async()=>{
+    try{
+        let data = await db.sequelize.query("exec getInteractionId",{ 
+          type: Sequelize.QueryTypes.RAW
+          })
+         console.log('log',data)
+         return data[0]
+    
+      }catch(err){
+          console.log("DB Error",err)
+          return err
+      }
+  }
+  let InteractionLog = async(LeadId,InteractionId,logmsg)=>{
+    try{
+      console.log('data',LeadId,logmsg)
+      let data = await db.sequelize.query("exec insertLog @lead='"+LeadId+"',@inter ='"+InteractionId+"',@Act='"+logmsg+"'",{ 
+        type: Sequelize.QueryTypes.RAW
+        })
+       console.log('log',data)
+       return data
+  
+    }catch(err){
+        console.log("DB Error",err)
+        return err
+    }
+  }
+
+  let SourceList = async(req,res) =>{
+    try{
+        let data = await LeadSourceList()
+        if(data.length>0){
+            let msg = 'Source List'
+            statusCode.successResponseWithData(res,msg,data)
+        }else{
+            let msg = 'Lead Sources are not Exist'
+            statusCode.successResponse(res,msg)
+        }
+
+    }catch(err){
+        console.log("Error",err)
+        return err
+    }
+  }
+
+  let LeadSourceList = async() =>{
+    try{
+        let data = await db.sequelize.query("exec LeadSourceList ",{ 
+          type: Sequelize.QueryTypes.RAW
+          })
+         console.log('log',data[0])
+         return data[0]
+    
+      }catch(err){
+          console.log("DB Error",err)
+          return err
+      }
+
+  }
+
+  let interactionTypes = async(req,res) =>{
+    try{
+        let data = await interactionTypeList()
+        if(data.length>0){
+            let msg = 'interaction Type List'
+            statusCode.successResponseWithData(res,msg,data)
+        }else{
+            let msg = 'interaction Types are not Exist'
+            statusCode.successResponse(res,msg)
+        }
+
+    }catch(err){
+        console.log("Error",err)
+        return err
+    }
+  }
+
+  let interactionTypeList = async() =>{
+    try{
+        let data = await db.sequelize.query("exec InteractionTypeList ",{ 
+          type: Sequelize.QueryTypes.RAW
+          })
+         console.log('log',data[0])
+         return data[0]
+    
+      }catch(err){
+          console.log("DB Error",err)
+          return err
+      }
 
   }
 
@@ -345,6 +467,8 @@ module.exports ={
     LeadUpdate,
     LeadStatusList,
     AssignToUser ,
-    UpdateLeadDetails  
+    UpdateLeadDetails,
+    SourceList,
+    interactionTypes,
 
 }

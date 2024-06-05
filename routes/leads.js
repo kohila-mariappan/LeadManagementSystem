@@ -12,6 +12,7 @@ router.post('/assignto/user',LeadController.AssignToUser)
 router.post('/update/details',LeadController.UpdateLeadDetails)
 router.get('/source/list',LeadController.SourceList)
 router.get('/interaction/type/list',LeadController.interactionTypes)
+router.post('/history/list',LeadController.HistoryList)
 
 
 

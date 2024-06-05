@@ -8,11 +8,11 @@ const excelJS = require("exceljs");
 
 const leadCreation  = async(req,res) =>{
     try{
-        let {FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress} = req.body
+        let {FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source} = req.body
         let findLead = await findOldLead(Email)
         console.log('findLead',findLead,findLead.length)
         if(findLead.length == 0){
-            let creationData = await newLead(FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress)
+            let creationData = await newLead(FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source)
         if(creationData.length>0){
             let msg = 'Lead Created Successfully'
             statusCode.successResponseForCreation(res,msg)
@@ -44,11 +44,9 @@ let findOldLead = async(Email) =>{
     }
 }
 
-let newLead = async (FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress) =>{
+let newLead = async (FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source) =>{
     try{
-        let StatusId = 1
-        let AssignedToUserID = 0
-        let data = await db.sequelize.query("EXEC createLeads @first = '"+FirstName+"',@last = '"+LastName+"',@email = '"+Email+"',@phne = '"+Phone+"',@prod = '"+ProductId+"',@loc = '"+LeadLocation+"',@ip = '"+IPAddress+"',@stat = '"+StatusId+"',@assign = '"+AssignedToUserID+"',",{
+        let data = await db.sequelize.query("EXEC createLeads @first = '"+FirstName+"',@last = '"+LastName+"',@email = '"+Email+"',@phne = '"+Phone+"',@prod = '"+ProductId+"',@loc = '"+LeadLocation+"',@ip = '"+IPAddress+"',@src = '"+Source+"' ",{
             type: Sequelize.QueryTypes.RAW})
             return data
 
@@ -459,6 +457,41 @@ const AssignToUser = async(req,res) =>{
 
   }
 
+  let HistoryList = async(req,res) =>{
+    try{
+        let leadId = req.body.LeadId
+        let data = await history(leadId)
+        if(data.length>0){
+            let msg = 'History List'
+            statusCode.successResponseWithData(res,msg,data)
+        }else{
+            let msg = 'No history for the lead'
+            statusCode.successResponse(res,msg)
+        }
+
+    }catch(err){
+        console.log("Error",err)
+        statusCode.errorResponse(res,err)
+    }
+  }
+
+  let history = async (leadId) =>
+    {
+        try{
+            console.log('data',leadId)
+            let data = await db.sequelize.query("exec history @lead='"+leadId+"'",{ 
+              type: Sequelize.QueryTypes.RAW
+              })
+             console.log('log',data)
+             return data[0]
+        
+          }catch(err){
+              console.log("DB Error",err)
+              return err
+          }
+
+  }
+
 module.exports ={
     leadCreation,
     leadsList,
@@ -470,5 +503,5 @@ module.exports ={
     UpdateLeadDetails,
     SourceList,
     interactionTypes,
-
+    HistoryList
 }

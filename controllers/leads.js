@@ -709,7 +709,7 @@ const AssignToUser = async(req,res) =>{
           }else{
             let msg = 'Failed to create List of Leads'
             statusCode.successResponse(res,msg)
-          }      
+          }   
         
       } catch (error) {
         console.error('Error reading Excel file:', error);
@@ -774,6 +774,52 @@ const AssignToUser = async(req,res) =>{
     }
   }
 
+  let SampleSheet = async(req,res) =>{
+    try{
+        const workbook = new excelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Lead List");
+      let path = "public/"
+      worksheet.columns = [
+        { header: "S no", key: "s_no", width: 5 }, 
+        { header: "FirstName", key: "first", width: 20 },
+        { header: "LastName", key: "last", width: 20 },
+        { header: "Email", key: "email", width: 50 },
+        { header: "Phone", key: "phne", width: 20 },
+        { header: "ProductName", key: "pid", width: 20 },
+    ];
+    worksheet.getRow(1).eachCell((cell) => {
+        cell.font = { bold: true };
+      });
+      
+      let date = new Date()
+      let currentDate = date.getTime()
+      console.log('date',currentDate)
+      try {
+      console.log("expath",currentDate)
+        const Exceldata = await workbook.xlsx.writeFile(`${path}${currentDate}.xlsx`)
+         .then(() => {
+           res.send({
+             status: "success",
+             message: "file successfully downloaded",
+             path: `${path}${currentDate}.xlsx`
+            });
+         });
+      } catch (err) {
+          res.send({
+          status: "error",
+          message: "Something went wrong",
+        });
+        } 
+      
+
+
+    }catch(err){
+        console.log('error',err)
+        let msg = 'Error for downloading a Sample Sheet' + "." + err
+        statusCode.errorResponse(res,err)
+    }
+  }
+
 
 module.exports ={
     leadCreation,
@@ -787,5 +833,6 @@ module.exports ={
     SourceList,
     interactionTypes,
     HistoryList,
-    ImportLeads
+    ImportLeads,
+    SampleSheet
 }

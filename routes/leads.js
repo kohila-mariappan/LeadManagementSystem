@@ -19,6 +19,7 @@ router.get('/source/list',LeadController.SourceList)
 router.get('/interaction/type/list',LeadController.interactionTypes)
 router.post('/history/list',LeadController.HistoryList)
 router.post('/import',type,LeadController.ImportLeads)
+router.get('/sample/sheet',LeadController.SampleSheet)
 
 
 module.exports = router

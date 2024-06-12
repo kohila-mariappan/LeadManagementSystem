@@ -3,6 +3,8 @@ const db = require('../dbConfig/dbConnection.js')
 const { default: Sequelize } = require('@sequelize/core')
 const statusCode = require('../utils/statusCode.js')
 const excelJS = require("exceljs");
+const fs = require('fs');
+const request = require('request')
 
 
 
@@ -16,7 +18,6 @@ const leadCreation  = async(req,res) =>{
             Source = 1 
             console.log('null/empty') 
         }else{
-            console.log('fjgdjhfgsjfgsdjh')
             let findSource = await findSourceName(Source)
             if(findSource.length>0){
                 Source = findSource[0].SourceId
@@ -36,8 +37,19 @@ const leadCreation  = async(req,res) =>{
         if(findLead.length == 0){
             let creationData = await newLead(FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source)
         if(creationData.length>0){
-            let msg = 'Lead Created Successfully'
-            statusCode.successResponseForCreation(res,msg)
+            let getId = await getnewId()
+            if(getId.length>0){
+                let emailId = getId[0].Email
+                let msg = `Lead-${emailId}-Created Successfully`
+                statusCode.successResponseForCreation(res,msg)
+                let LeadId = getId[0].LeadId
+                let LeadCreationLog = await ActivityLog(LeadId,msg)
+                let sendMail = await sendEmail(emailId)
+            }else{
+                let msg = 'Lead Creation Failed'
+                statusCode.successResponse(res,msg)
+            }           
+
         }else{
             let msg = 'Lead Creation Failed'
             statusCode.successResponse(res,msg)
@@ -112,6 +124,46 @@ let newLead = async (FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAdd
     }
 }
 
+let getnewId = async()=>{
+    try{
+        let data = await db.sequelize.query("EXEC getLeadId",{
+            type: Sequelize.QueryTypes.RAW})
+            return data[0]
+    }catch(err){
+        console.log("db-error",err)
+        return err;
+    }
+}
+
+let sendEmail = async(emailId) =>{
+    try{
+        const options = {
+            method: 'POST',
+            url: 'http://localhost:7027/api/email/azure',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Basic Y29tbXVuaWNhdGlvbi1zZXJ2aWNlOnJyNlA2SG9MclFJT2psM0loMU5yXw=='
+            },
+            body: {
+                content: {
+                    html: `<html><head><style>\n</style></head><body>\n   Lead -${emailId}-Created Successfully \n<p>Regards,<br>cluBITS</p>\n</body></html>`,
+                    subject: 'Lead Created'
+                },
+                recipients: {to: [{address: emailId}]}
+            },
+            json: true
+        };
+        request(options, function (error, response, body) {
+            if (error) throw new Error(error);
+            console.log(body);
+        });
+
+    }catch(err){
+        console.log('Email Sending Error',err)
+        return err
+    }
+}
+
 let leadsList = async(req,res) =>{
     try{
         let LeadsDetails = await getAllLeads()
@@ -164,6 +216,7 @@ let leadData = async(leadId) =>{
     try{
         let data = await db.sequelize.query("EXEC singleLeadDetails @lead = '"+leadId+"' ",{
             type: Sequelize.QueryTypes.RAW})
+            console.log('data',data)
             return data[0]
     }catch(err){
         return err
@@ -612,6 +665,115 @@ const AssignToUser = async(req,res) =>{
           }
 
   }
+  let ImportLeads = async (req,res) =>{
+    try{
+        console.log('req',req)
+        let {ip,location} = req.body
+        if (req.file == undefined) {
+            return res.status(400).send("Please upload an excel file!");
+          }
+                   
+    let path = "public/" + req.file.filename;
+    console.log('path',path)
+    const workbook = new excelJS.Workbook();
+    try {
+       let data = await workbook.xlsx.readFile(path);
+        console.log('data',data)
+        const worksheet = workbook.getWorksheet('Sheet1')
+        const allRows = []
+        console.log('worksheet.actualRowCount',worksheet.actualRowCount,worksheet.columnCount)
+        for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
+            const row = worksheet.getRow(rowIndex);  // Get the row object
+      //console.log('row',row)
+            // Create an empty array to store values from the current row
+            const rowValues = [];
+      
+            // Loop through each cell in the row and get its value
+            for (let colIndex = 1; colIndex <= worksheet.columnCount; colIndex++) {
+              const cellValue = worksheet.getCell(rowIndex,colIndex).value;
+              //console.log('cellValue',cellValue)
+              rowValues.push(cellValue);
+            }
+      //console.log('rowValues',rowValues)
+            allRows.push(rowValues); // Add the row's values to the allRows array
+          }
+          let validation = await validateData(allRows)
+          console.log('validation',validation)
+          const allRowsString = JSON.stringify(allRows)
+          console.log('allRowsString',allRowsString)
+          let insertLeads = await insertImportData(allRowsString,ip,location)
+          console.log('insertLeads',insertLeads)
+          if(insertLeads.length>0){
+            let msg = 'List of Leads created Successfully'
+            statusCode.successResponseForCreation(res,msg)
+          }else{
+            let msg = 'Failed to create List of Leads'
+            statusCode.successResponse(res,msg)
+          }      
+        
+      } catch (error) {
+        console.error('Error reading Excel file:', error);
+        // Handle error appropriately
+      }   
+    
+    }catch(err){
+        console.log("Error",err)
+        statusCode.errorResponse(res,err)
+    }
+  }
+
+  let validateData = async(data) => {
+    const validRows = [];
+
+    for (let i=0;i<data.length;i++){
+        console.log('input',data[i])
+        let datas = await validate(data[i])
+        if(datas = "SUCCESS"){
+            validRows.push(data[i])
+        }else{
+            continue
+        }
+    }    
+    console.log('validRows',validRows)
+  
+    return validRows;
+  }
+
+  let validate = async(data)=>{
+    console.log('data1',data)
+    let row = data
+      // Basic data type and presence validation (modify as needed)
+     if(!row[0] || typeof row[0] != 'string'){
+        return 'FirstName must be a Characters.not accept empty value'
+     }else if(!row[1] || typeof row[1] != 'string'){
+        return 'FirstName must be a Characters.not accept empty value'
+     }else if(!row[2] || !/^\S+@\S+\.\S+$/.test(row[2].text)){
+        return 'invalid email'
+     }else if(!row[3] || typeof row[3] != 'number' || row[3].toString().length !== 10){
+        return 'invalid Phone number'
+     }else if(!row[4] || typeof row[4] != 'string'){
+        return 'Invalid Product Name'
+     }else{
+        return 'validation Success'
+     }
+    }
+
+  let insertImportData = async (excelDataString,ip,loc) =>{
+    try{
+       // console.log('data',leadId)
+            let data = await db.sequelize.query("exec importleaddata @json='"+excelDataString+"',@ip = '"+ip+"',@loc='"+loc+"'",{ 
+              type: Sequelize.QueryTypes.RAW
+              })
+             console.log('log',data)
+             return data
+
+    }
+    catch(err){
+        console.log("Db Error",err)
+        return err
+    }
+  }
+
 
 module.exports ={
     leadCreation,
@@ -624,5 +786,6 @@ module.exports ={
     UpdateLeadDetails,
     SourceList,
     interactionTypes,
-    HistoryList
+    HistoryList,
+    ImportLeads
 }

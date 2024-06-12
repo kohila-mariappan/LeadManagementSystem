@@ -678,7 +678,7 @@ const AssignToUser = async(req,res) =>{
     const workbook = new excelJS.Workbook();
     try {
        let data = await workbook.xlsx.readFile(path);
-        console.log('data',data)
+        //console.log('data',data)
         const worksheet = workbook.getWorksheet('Sheet1')
         const allRows = []
         console.log('worksheet.actualRowCount',worksheet.actualRowCount,worksheet.columnCount)
@@ -689,27 +689,63 @@ const AssignToUser = async(req,res) =>{
             const rowValues = [];
       
             // Loop through each cell in the row and get its value
-            for (let colIndex = 1; colIndex <= worksheet.columnCount; colIndex++) {
+            for (let colIndex = 2; colIndex <= worksheet.columnCount; colIndex++) {
               const cellValue = worksheet.getCell(rowIndex,colIndex).value;
               //console.log('cellValue',cellValue)
               rowValues.push(cellValue);
             }
-      //console.log('rowValues',rowValues)
+        //console.log('rowValues',rowValues)
             allRows.push(rowValues); // Add the row's values to the allRows array
           }
-          let validation = await validateData(allRows)
-          console.log('validation',validation)
-          const allRowsString = JSON.stringify(allRows)
+          //let validation = await validateData(allRows)
+          console.log('length',allRows.length,allRows)
+          let removeEmpty = []
+          for(let i =0;i<allRows.length;i++){
+            let data = allRows[i]
+            console.log('686688',data)
+            if((data[0] || typeof data[0] == 'string')&&(data[1] || typeof data[1] == 'string') &&
+        (data[2]||typeof data[2] == 'string') && (data[3]||typeof data[3] == 'string') &&
+        (data[4]||typeof data[4] == 'string') ){
+            //console.log('jsgfhsdgf',data)
+            removeEmpty.push(allRows[i])
+            console.log('removeEmpty',removeEmpty)
+        }else{
+            continue
+        }
+            
+          }
+          console.log('remove',removeEmpty)
+          let uniqueEmail =[]
+          for(let i=0;i<removeEmpty.length;i++){
+            let data = removeEmpty[i]
+            console.log('email',data[2].text)
+            let findLead = await findOldLead(data[2].text)
+            if(findLead.length>0){
+                continue
+            }else{
+                uniqueEmail.push(data)
+            }
+          }
+          console.log('uniqueEmail',uniqueEmail)
+
+          const allRowsString = JSON.stringify(uniqueEmail)
           console.log('allRowsString',allRowsString)
           let insertLeads = await insertImportData(allRowsString,ip,location)
           console.log('insertLeads',insertLeads)
           if(insertLeads.length>0){
             let msg = 'List of Leads created Successfully'
             statusCode.successResponseForCreation(res,msg)
+            fs.unlink(path, (err) => {
+                if (err) {
+                  console.error('Error deleting temporary file:', err);
+                } else {
+                  console.log('Data uploaded and temporary file deleted successfully!');
+                }
+              });
           }else{
-            let msg = 'Failed to create List of Leads'
+            let msg = 'Failed to create List of Leads' +' '+ insertLeads.cause
             statusCode.successResponse(res,msg)
-          }   
+          } 
         
       } catch (error) {
         console.error('Error reading Excel file:', error);

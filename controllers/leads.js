@@ -675,14 +675,15 @@ const AssignToUser = async(req,res) =>{
                    
     let path = "public/" + req.file.filename;
     console.log('path',path)
-    const workbook = new excelJS.Workbook();
     try {
+        const workbook = new excelJS.Workbook();
        let data = await workbook.xlsx.readFile(path);
         //console.log('data',data)
         const worksheet = workbook.getWorksheet('Sheet1')
         const allRows = []
-        console.log('worksheet.actualRowCount',worksheet.actualRowCount,worksheet.columnCount)
-        for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
+        console.log('worksheet.RowCount',worksheet.rowCount,worksheet.columnCount)
+
+        for (let rowIndex = 2; rowIndex <= worksheet.rowCount; rowIndex++) {
             const row = worksheet.getRow(rowIndex);  // Get the row object
       //console.log('row',row)
             // Create an empty array to store values from the current row
@@ -755,7 +756,7 @@ const AssignToUser = async(req,res) =>{
             //       console.log('Data uploaded and temporary file deleted successfully!');
             //     }
             //   });
-              let msg = 'Undefined Values are not accepted'
+              let msg = 'user already exist or Undefined Values are not accepted'
               statusCode.errorResponse(res,msg)
         } 
         

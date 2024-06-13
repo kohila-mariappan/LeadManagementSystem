@@ -10,7 +10,7 @@ const request = require('request')
 
 const leadCreation  = async(req,res) =>{
     try{
-        let {FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source} = req.body
+        let {FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source,ReferredBy,Notes} = req.body
         let findLead = await findOldLead(Email)
         console.log('findLead',findLead,findLead.length)
         console.log('Source',Source)
@@ -35,7 +35,7 @@ const leadCreation  = async(req,res) =>{
         console.log('Source',Source)
 
         if(findLead.length == 0){
-            let creationData = await newLead(FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source)
+            let creationData = await newLead(FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source,ReferredBy,Notes)
         if(creationData.length>0){
             let getId = await getnewId()
             if(getId.length>0){
@@ -112,9 +112,9 @@ let findOldLead = async(Email) =>{
     }
 }
 
-let newLead = async (FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source) =>{
+let newLead = async (FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source,ReferredBy,Notes) =>{
     try{
-        let data = await db.sequelize.query("EXEC createLeads @first = '"+FirstName+"',@last = '"+LastName+"',@email = '"+Email+"',@phne = '"+Phone+"',@prod = '"+ProductId+"',@loc = '"+LeadLocation+"',@ip = '"+IPAddress+"',@src = '"+Source+"' ",{
+        let data = await db.sequelize.query("EXEC createLeads @first = '"+FirstName+"',@last = '"+LastName+"',@email = '"+Email+"',@phne = '"+Phone+"',@prod = '"+ProductId+"',@loc = '"+LeadLocation+"',@ip = '"+IPAddress+"',@src = '"+Source+"',@ref = '"+ReferredBy+"',@not = '"+Notes+"' ",{
             type: Sequelize.QueryTypes.RAW})
             return data
 
@@ -771,41 +771,7 @@ const AssignToUser = async(req,res) =>{
     }
   }
 
-  let validateData = async(data) => {
-    const validRows = [];
-
-    for (let i=0;i<data.length;i++){
-        console.log('input',data[i])
-        let datas = await validate(data[i])
-        if(datas = "SUCCESS"){
-            validRows.push(data[i])
-        }else{
-            continue
-        }
-    }    
-    console.log('validRows',validRows)
-  
-    return validRows;
-  }
-
-  let validate = async(data)=>{
-    console.log('data1',data)
-    let row = data
-      // Basic data type and presence validation (modify as needed)
-     if(!row[0] || typeof row[0] != 'string'){
-        return 'FirstName must be a Characters.not accept empty value'
-     }else if(!row[1] || typeof row[1] != 'string'){
-        return 'FirstName must be a Characters.not accept empty value'
-     }else if(!row[2] || !/^\S+@\S+\.\S+$/.test(row[2].text)){
-        return 'invalid email'
-     }else if(!row[3] || typeof row[3] != 'number' || row[3].toString().length !== 10){
-        return 'invalid Phone number'
-     }else if(!row[4] || typeof row[4] != 'string'){
-        return 'Invalid Product Name'
-     }else{
-        return 'validation Success'
-     }
-    }
+ 
 
   let insertImportData = async (excelDataString,ip,loc) =>{
     try{

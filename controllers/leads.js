@@ -726,26 +726,38 @@ const AssignToUser = async(req,res) =>{
                 uniqueEmail.push(data)
             }
           }
-          console.log('uniqueEmail',uniqueEmail)
+          console.log('uniqueEmail',uniqueEmail.length)
 
           const allRowsString = JSON.stringify(uniqueEmail)
-          console.log('allRowsString',allRowsString)
+          console.log('allRowsString',allRowsString.length)
+          if(uniqueEmail.length>0){
           let insertLeads = await insertImportData(allRowsString,ip,location)
           console.log('insertLeads',insertLeads)
-          if(insertLeads.length>0){
+          if(insertLeads.length>1){
             let msg = 'List of Leads created Successfully'
             statusCode.successResponseForCreation(res,msg)
-            fs.unlink(path, (err) => {
-                if (err) {
-                  console.error('Error deleting temporary file:', err);
-                } else {
-                  console.log('Data uploaded and temporary file deleted successfully!');
-                }
-              });
+            // fs.unlink(path, (err) => {
+            //     if (err) {
+            //       console.error('Error deleting temporary file:', err);
+            //     } else {
+            //       console.log('Data uploaded and temporary file deleted successfully!');
+            //     }
+            //   });
           }else{
             let msg = 'Failed to create List of Leads' +' '+ insertLeads.cause
             statusCode.successResponse(res,msg)
-          } 
+          }
+        }else{
+            // fs.unlink(path, (err) => {
+            //     if (err) {
+            //       console.error('Error deleting temporary file:', err);
+            //     } else {
+            //       console.log('Data uploaded and temporary file deleted successfully!');
+            //     }
+            //   });
+              let msg = 'Undefined Values are not accepted'
+              statusCode.errorResponse(res,msg)
+        } 
         
       } catch (error) {
         console.error('Error reading Excel file:', error);
@@ -813,7 +825,7 @@ const AssignToUser = async(req,res) =>{
   let SampleSheet = async(req,res) =>{
     try{
         const workbook = new excelJS.Workbook();
-      const worksheet = workbook.addWorksheet("Lead List");
+      const worksheet = workbook.addWorksheet("Sheet1");
       let path = "public/"
       worksheet.columns = [
         { header: "S no", key: "s_no", width: 5 }, 

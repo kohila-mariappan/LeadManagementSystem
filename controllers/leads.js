@@ -11,59 +11,62 @@ const request = require('request')
 const leadCreation  = async(req,res) =>{
     try{
         let {FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source,ReferredBy,Notes} = req.body
-        let findLead = await findOldLead(Email)
-        console.log('findLead',findLead,findLead.length)
-        console.log('Source',Source)
-        if((Source === 'NULL') || (Source === '') || (Source === 'null')){
-            Source = 1 
-            console.log('null/empty') 
-        }else{
-            let findSource = await findSourceName(Source)
-            if(findSource.length>0){
-                Source = findSource[0].SourceId
-            }else{
-            let newSource = await insertNewSource(Source)
-            if(newSource.length>0){
-                let data = await getSourceId()
-                Source = data[0].SourceId
-            }else{
-                let msg = 'Failed to add New Source'
-                statusCode.successResponse(res,msg)
-            }
-            }       
-        }
-        console.log('Source',Source)
-
-        if(findLead.length == 0){
-            let creationData = await newLead(FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source,ReferredBy,Notes)
-        if(creationData.length>0){
-            let getId = await getnewId()
-            if(getId.length>0){
-                let emailId = getId[0].Email
-                let msg = `Lead-${emailId}-Created Successfully`
+        // let findLead = await findOldLead(Email)
+        // console.log('findLead',findLead,findLead.length)
+        //console.log('Source',Source)
+        // if((Source === 'NULL') || (Source === '') || (Source === 'null')){
+        //     Source = 1 
+        //     console.log('null/empty') 
+        // }else{
+        //     let findSource = await findSourceName(Source)
+        //     if(findSource.length>0){
+        //         Source = findSource[0].SourceId
+        //     }else{
+        //     let newSource = await insertNewSource(Source)
+        //     if(newSource.length>0){
+        //         let data = await getSourceId()
+        //         Source = data[0].SourceId
+        //     }else{
+        //         let msg = 'Failed to add New Source'
+        //         statusCode.successResponse(res,msg)
+        //     }
+        //     }       
+        // }
+        // let source = await insertNewSource(Source)
+        // console.log('Source',source[0].sourceId)
+        // let SourceId = source[0].sourceId
+ 
+        // if(findLead.length == 0){
+        let creationData = await newLead(FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source,ReferredBy,Notes)
+         if(typeof creationData !== 'string'){
+        //     let getId = await getnewId()
+        //     if(getId.length>0){
+        //         let emailId = getId[0].Email
+                let msg = `Lead-${Email}-Created Successfully`
                 statusCode.successResponseForCreation(res,msg)
-                let LeadId = getId[0].LeadId
-                let LeadCreationLog = await ActivityLog(LeadId,msg)
-                let sendMail = await sendEmail(emailId)
+        //         let LeadId = getId[0].LeadId
+                //let LeadCreationLog = await ActivityLog(LeadId,msg)
+                let sendMail = await sendEmail(Email)
             }else{
-                let msg = 'Lead Creation Failed'
+                let msg =  `Lead Creation Failed.${creationData}`
                 statusCode.successResponse(res,msg)
             }           
 
-        }else{
-            let msg = 'Lead Creation Failed'
-            statusCode.successResponse(res,msg)
-        }
-        }else{
-            console.log('data',findLead[0].Email)
+        // }else{
+        //     let msg = 'Lead Creation Failed'
+        //     statusCode.successResponse(res,msg)
+        // }
+        // }else{
+        //     console.log('data',findLead[0].Email)
 
-            let msg = findLead[0].Email +"-" +'Lead already Exist!'
-            statusCode.successResponse(res,msg)
-        }       
+        //     let msg = findLead[0].Email +"-" +'Lead already Exist!'
+        //     statusCode.successResponse(res,msg)
+        // }       
 
     }catch(err){
         console.log("Error",err)
-        statusCode.errorResponse(res,err)
+        let msg = 'Lead creation Failed.' + "" +err
+        statusCode.errorResponse(res,msg)
     }
 }
 
@@ -83,10 +86,10 @@ let insertNewSource = async (Source) =>{
     try{
         let data = await db.sequelize.query("EXEC insertSource @source = '"+Source+"' ",{
             type: Sequelize.QueryTypes.RAW})
-            return data
+            return data[0]
     }catch(err){
-        console.log("DB Error",err)
-        return err
+        console.log("DB Error",err.message)
+        return err.message
     }
 }
 
@@ -114,13 +117,13 @@ let findOldLead = async(Email) =>{
 
 let newLead = async (FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source,ReferredBy,Notes) =>{
     try{
-        let data = await db.sequelize.query("EXEC createLeads @first = '"+FirstName+"',@last = '"+LastName+"',@email = '"+Email+"',@phne = '"+Phone+"',@prod = '"+ProductId+"',@loc = '"+LeadLocation+"',@ip = '"+IPAddress+"',@src = '"+Source+"',@ref = '"+ReferredBy+"',@not = '"+Notes+"' ",{
+        let data = await db.sequelize.query("EXEC createLeads @first = '"+FirstName+"',@last = '"+LastName+"',@email = '"+Email+"',@phne = '"+Phone+"',@prod = '"+ProductId+"',@loc = '"+LeadLocation+"',@ip = '"+IPAddress+"',@source = '"+Source+"',@ref = '"+ReferredBy+"',@not = '"+Notes+"' ",{
             type: Sequelize.QueryTypes.RAW})
-            return data
+            return data[0]
 
     }catch(err){
-        console.log("DB Error",err)
-        return err
+        console.log("DB Error",err.message)
+        return err.message
     }
 }
 
@@ -167,17 +170,17 @@ let sendEmail = async(emailId) =>{
 let leadsList = async(req,res) =>{
     try{
         let LeadsDetails = await getAllLeads()
-        if(LeadsDetails.length>0){
+        if(typeof LeadsDetails !== 'string'){
             let msg = "Leads List"
             statusCode.successResponseWithData(res,msg,LeadsDetails)
         }else{
-            let msg = 'Leads are not Exist!'
+            let msg = `Leads are not Exist!${LeadsDetails}`
             statusCode.successResponse(res,msg)
         }
-
     }catch(err){
         console.log("Error",err)
-        statusCode.errorResponse(res,err)
+        let msg = `Not getting Leads List.${err}`
+        statusCode.errorResponse(res,msg)
     }
 }
 
@@ -196,19 +199,18 @@ let LeadDetails = async(req,res) =>{
     try{
         let leadId = req.body.leadId
         let data = await leadData(leadId)
-        console.log('data',data,data.length)
-        if(data.length>0){
+        console.log('data',data)
+        if(typeof data !== 'string'){
             let msg = 'Lead Details'
             statusCode.successResponseWithData(res,msg,data)
         }else{
-            let msg = 'Invalid Lead Id'
+            let msg = `Not Getting Lead Details.${data}`
             statusCode.successResponse(res,msg)
-
         }
-
     }catch(err){
         console.log("Error",err)
-        statusCode.errorResponse(res,err)
+        let msg = `Error: Getting Lead Details. ${err}`
+        statusCode.errorResponse(res,msg)
     }
 }
 
@@ -234,46 +236,46 @@ let LeadExport = async(req,res) =>{
       let path = "public/"
       worksheet.columns = [
         { header: "S no.", key: "s_no", width: 10 }, 
-        { header: "LeadId", key: "lead", width: 10 },
+        //{ header: "LeadId", key: "lead", width: 10 },
         { header: "FirstName", key: "first", width: 15 },
         { header: "LastName", key: "last", width: 15 },
         { header: "Email", key: "email", width: 25 },
-        { header: "Phone", key: "phne", width: 10 },
-        { header: "ProductId", key: "pid", width: 10 },
-        { header: "InterestLevel", key: "level", width: 15 },
-        { header: "SourceId", key: "src", width: 10 },
-        { header: "StatusId", key: "stat", width: 10 },
-        { header: "AssignedToUserID", key: "asn", width: 18 },
-        { header: "LeadLocation", key: "loc", width: 15 },
-        { header: "IPAddress", key: "ip", width: 15 },
-        { header: "Referredby", key: "ref", width: 15 },
-        { header: "LastContactDate", key: "con", width: 18 },
-        { header: "NextStep", key: "next", width: 20 },
-        { header: "NextFollowUpDate", key: "nextf", width: 20 },
-        { header: "Notes", key: "note", width: 30 }
+        { header: "Phone", key: "phne", width: 20 },
+        { header: "ProductName", key: "pid", width: 20 },
+        //{ header: "InterestLevel", key: "level", width: 15 },
+        { header: "Source", key: "src", width: 20 },
+        { header: "Status", key: "stat", width: 20 },
+        { header: "AssignedToUser", key: "asn", width: 18 },
+        { header: "LeadLocation", key: "loc", width: 100 },
+        { header: "IPAddress", key: "ip", width: 20 },
+        // { header: "Referredby", key: "ref", width: 15 },
+        // { header: "LastContactDate", key: "con", width: 18 },
+        // { header: "NextStep", key: "next", width: 20 },
+        // { header: "NextFollowUpDate", key: "nextf", width: 20 },
+        // { header: "Notes", key: "note", width: 30 }
     ];
     // Looping through User data
   let counter = 1;
   LeadData.forEach((data) => {
     console.log('LeadData',data,data.LeadId)
     data.s_no = counter;
-    data.lead = data.LeadId
+    //data.lead = data.LeadID
     data.first= data.FirstName
     data.last = data.LastName
     data.email = data.Email
     data.phne = data.Phone
-    data.pid= data.ProductId
-    data.level = data.InterestLevel
-    data.src = data.SourceId
-    data.stat = data.StatusId
-    data.asn= data.AssignedToUserID
+    data.pid= data.ProductName
+    //data.level = data.InterestLevel
+    data.src = data.SourceName
+    data.stat = data.StatusName
+    data.asn= data.UserName
     data.loc = data.LeadLocation
     data.ip = data.IPAddress
-    data.ref = data.Referredby
-    data.con = data.LastContactDate
-    data.next = data.NextStep
-    data.nextf = data.NextFollowUpDate
-    data.note = data.notes
+    // data.ref = data.Referredby
+    // data.con = data.LastContactDate
+    // data.next = data.NextStep
+    // data.nextf = data.NextFollowUpDate
+    // data.note = data.notes
     console.log('sheeetdata',worksheet.addRow(data)); // Add data in worksheet
     counter++;
   });
@@ -299,13 +301,14 @@ let LeadExport = async(req,res) =>{
   } catch (err) {
       res.send({
       status: "error",
-      message: "Something went wrong",
+      message: "Something went wrong while Export the data",
     });
     } 
   
     }catch(err){
       console.log("Error",err)
-      statusCode.errorResponse(res,err)
+      let msg = `Failed to Export Data. ${err}`
+      statusCode.errorResponse(res,msg)
     }
 }
 
@@ -321,17 +324,18 @@ let LeadUpdate = async(req,res) =>{
 let LeadStatusList = async (req,res) =>{
     try{
         let data = await allLeadStatus()
-        if(data.length>0){
+        if(typeof data !== 'string'){
             let msg = 'Status List'
             statusCode.successResponseWithData(res,msg,data)
         }
         else{
-            let msg = 'Status are Not Exist'
+            let msg = `Status are Not Exist.${data}`
             statusCode.successResponse(res,msg)
         }
     }catch(err){
         console.log("Error",err)
-        statusCode.errorResponse(res,err)
+        let msg = `Not Getting Status List. ${err}`
+        statusCode.errorResponse(res,msg)
     }
 }
 
@@ -352,19 +356,20 @@ const AssignToUser = async(req,res) =>{
       let {LeadId,UserId} = req.body      
       let update = await updateUser(LeadId,UserId)
       console.log('update',update)
-      if(update.length>0){
-        let msg = 'Lead Assignned to User Successfully'
+      if(typeof update !== 'string'){
+        let msg = `Lead Assigned To User-${update} Successfully`
         statusCode.successResponseForCreation(res,msg)
       }else{
-        let msg = 'User Updation Failed'
+        let msg = `User Updation Failed.${update}`
         statusCode.successResponse(res,msg)
       }
-        let userName = await updatedUserName(UserId)
-        console.log('userName',userName)
-        let msg = `Lead Assigned To User-${userName[0].FullName} Successfully`
-        let log = await ActivityLog(LeadId,msg)      
+        // let userName = await updatedUserName(UserId)
+        // console.log('userName',userName)
+        // let msg = `Lead Assigned To User-${userName[0].FullName} Successfully`
+        // let log = await ActivityLog(LeadId,msg)      
      }catch(err){
       console.log("error",err)
+      let msg = `Failed To Assigned User in the lead.${err}`
       statusCode.errorResponse(res,err)
     }
   }
@@ -377,8 +382,8 @@ const AssignToUser = async(req,res) =>{
        console.log('dataupdate',data)
        return data
     }catch(err){
-      console.log('DB Error',err)
-      return err
+      console.log('DB Error',err.message)
+      return err.message
     }  
   }
  

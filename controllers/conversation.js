@@ -63,8 +63,8 @@ try{
         type: Sequelize.QueryTypes.RAW})
         return data
 }catch(err){
-    console.log("DB Error")
-    return err
+    console.log("DB Error",err.message)
+    return err.message
 }
 }
 
@@ -72,17 +72,18 @@ let EmailHistory = async (req,res) =>{
     try{
         let email = req.body.Email
         let data = await EmailHistoryList(email)
-        if(data.length>0){
+        if(typeof data !== 'string'){
             let msg = 'Email History'
             statusCode.successResponseWithData(res,msg,data)
         }else{
-            let msg = 'Email conversation has been Empty'
+            let msg = `Email conversation has been Empty.${data}`
             statusCode.successResponse(res,msg)
         }
 
     }catch(err){
         console.log(err)
-        statusCode.errorResponse(res,err)
+        let msg = `Failed to get Email History.${err}`
+        statusCode.errorResponse(res,msg)
     }
 }
 
@@ -92,8 +93,8 @@ let EmailHistoryList = async(email) =>{
             type: Sequelize.QueryTypes.RAW})
             return data[0]
     }catch(err){
-        console.log("DB Error")
-        return err
+        console.log("DB Error",err.message)
+        return err.message
     }
 }
 
@@ -110,7 +111,7 @@ let SendSms = async(req,res) =>{
         let log = await SMSActivityLog(SenderNo,ReceiverNo,Content,SmsStatus)
     }
     }catch(err){
-        let msg = err + " " + 'Failed To Send SMS'
+        let msg = `Failed to send SMS.${err}`
         statusCode.errorResponse(res,msg)
     }
 }
@@ -152,8 +153,8 @@ let SMSActivityLog= async(SenderNo,ReceiverNo,Content,SmsStatus) =>{
             type: Sequelize.QueryTypes.RAW})
             return data
     }catch(err){
-        console.log("DB Error")
-        return err
+        console.log("DB Error",err.message)
+        return err.message
     }
 
 }
@@ -162,16 +163,16 @@ let SMSHistory = async(req,res) =>{
     try{
         let {ReceiverNo} = req.body
         let data = await UserSMSHistory(ReceiverNo)
-        if(data.length>0){
+        if(typeof data !== 'string'){
             let msg = " SMS History"
             statusCode.successResponseWithData(res,msg,data)
         }else{
-            let msg = 'SMS History Not Exist For this Receiver'
+            let msg = `SMS History Not Exist For this Receiver.${data}`
             statusCode.successResponse(res,msg)
         }
     }catch(err){
-        let msg = err + " " +'Error from view SMS History List'
-        statusCode.errorResponse(res,err)
+        let msg = `Failed to get SMS History.${err}`
+        statusCode.errorResponse(res,msg)
     }
 }
 
@@ -181,8 +182,8 @@ let UserSMSHistory = async(Recevier) =>{
             type: Sequelize.QueryTypes.RAW})
             return data[0]
     }catch(err){
-        console.log("DB Error")
-        return err
+        console.log("DB Error",err.message)
+        return err.message
     }
 }
 module.exports = {

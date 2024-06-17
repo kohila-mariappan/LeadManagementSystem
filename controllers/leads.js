@@ -221,6 +221,7 @@ let leadData = async(leadId) =>{
             console.log('data',data)
             return data[0]
     }catch(err){
+        console.log(`DbError.${err}`)
         return err
     }
 }
@@ -229,8 +230,7 @@ let LeadExport = async(req,res) =>{
     try{
       let datas = await getAllLeads()
       let LeadData = datas
-      console.log('lead list',LeadData )
-  
+      console.log('lead list',LeadData )  
       const workbook = new excelJS.Workbook();
       const worksheet = workbook.addWorksheet("Lead List");
       let path = "public/"
@@ -312,14 +312,7 @@ let LeadExport = async(req,res) =>{
     }
 }
 
-let LeadUpdate = async(req,res) =>{
-    try{
 
-    }catch(err){
-        console.log("Error",err)
-        statusCode.errorResponse(res,err)
-    }
-}
 
 let LeadStatusList = async (req,res) =>{
     try{
@@ -345,8 +338,8 @@ let allLeadStatus = async()=>{
             type: Sequelize.QueryTypes.RAW})
             return data[0]
     }catch(err){
-        console.log("Error",err)
-        return err
+        console.log("Error",err.message)
+        return err.message
     }
 }
 
@@ -370,7 +363,7 @@ const AssignToUser = async(req,res) =>{
      }catch(err){
       console.log("error",err)
       let msg = `Failed To Assigned User in the lead.${err}`
-      statusCode.errorResponse(res,err)
+      statusCode.errorResponse(res,msg)
     }
   }
 
@@ -405,13 +398,13 @@ const AssignToUser = async(req,res) =>{
   let UpdateLeadDetails = async(req,res) =>{
     try{
         let{LeadId,StatusId,InteractionType,Notes} = req.body
-        let data = await updateLeadStatus(LeadId,StatusId)
-        if(data.length>0){
-            let data = await leadStatus(StatusId)
+        let data = await updateLeadStatus(LeadId,StatusId,InteractionType,Notes)
+        if(typeof data !== 'string'){
+            //let data = await leadStatus(StatusId)
             console.log('data',data)
-            if(data.length>0){
-                let msg = `Lead Status ${data[0].StatusName}Updated Successfully`
-                let statusLog = await ActivityLog(LeadId,msg)
+            //if(data.length>0){
+                let msg = `Lead Status and Interactions Updated Successfully`
+                //let statusLog = await ActivityLog(LeadId,msg)
                 //let findLead = await FindLeadInteraction(LeadId)
                 // console.log('findLead',findLead,findLead.length)
                 // if(findLead.length>0){
@@ -422,33 +415,35 @@ const AssignToUser = async(req,res) =>{
                 //     statusCode.successResponseForCreation(res,msg)
     
                 // }else{
-                let interactiondata = await InsertInteractionData(LeadId,InteractionType,Notes)
-                let getId = await getInteractionId()
-                console.log('getId',getId,getId.length)
-                if(getId.length>0){
-                    let InteractionId= getId[0].InteractionId
-                    let logmsg = `Interaction Type : ${getId[0].InteractionType} and Notes: ${getId[0].Notes}  Updated Successfully`
-                    let interactiondataLog = await InteractionLog(LeadId,InteractionId,logmsg)
-                    let msg = 'Lead Updated Successfully'
-                    statusCode.successResponseForCreation(res,msg)
-                }else{
-                    let msg = "Lead Interaction Updated Failed"
-                    statusCode.successResponse(res,msg)
-                }
+                // let interactiondata = await InsertInteractionData(LeadId,InteractionType,Notes)
+                // let getId = await getInteractionId()
+                // console.log('getId',getId,getId.length)
+                // if(getId.length>0){
+                //     let InteractionId= getId[0].InteractionId
+                //     let logmsg = `Interaction Type : ${getId[0].InteractionType} and Notes: ${getId[0].Notes}  Updated Successfully`
+                //     let interactiondataLog = await InteractionLog(LeadId,InteractionId,logmsg)
+                //     let msg = 'Lead Updated Successfully'
+                //     statusCode.successResponseForCreation(res,msg)
+                // }else{
+                //     let msg = "Lead Interaction Updated Failed"
+                //     statusCode.successResponse(res,msg)
+                // }
             //}
 
-            }else{
-                let msg = 'Invalid Status'
-                statusCode.successResponse(res,msg)
-            }           
+            //     }else{
+            //     let msg = 'Invalid Status'
+            //     statusCode.successResponse(res,msg)
+            // }     
+            statusCode.successResponseForCreation(res,msg)  
         }else{
-            let msg = "Lead Status Updation Failed"
+            let msg = `Lead Status Updation Failed.${data}`
             statusCode.successResponse(res,msg)
         }
 
     }catch(err){
         console.log("Error",err)
-        statusCode.errorResponse(res,err)
+        let msg = `Lead Status Updation Failed.${err}`
+        statusCode.errorResponse(res,msg)
     }
   }
 
@@ -482,18 +477,17 @@ const AssignToUser = async(req,res) =>{
 
   }
 
-  let updateLeadStatus = async (LeadId,StatusId) =>{
+  let updateLeadStatus = async (LeadId,StatusId,InteractionType,Notes) =>{
     try{
-        console.log('data',LeadId,StatusId)
-        let data = await db.sequelize.query("exec updateLeads @lead='"+LeadId+"',@stat='"+StatusId+"'",{ 
+        console.log('data',LeadId,StatusId,InteractionType,Notes)
+        let data = await db.sequelize.query("exec updateLeads @lead='"+LeadId+"',@stat='"+StatusId+"',@type= '"+InteractionType+"',@note = '"+Notes+"'",{ 
           type: Sequelize.QueryTypes.RAW
           })
          console.log('log',data)
-         return data[0]
-    
+         return data[0]    
       }catch(err){
-          console.log("DB Error",err)
-          return err
+          console.log("DB Error",err.message)
+          return err.message
       }
   }
 
@@ -575,7 +569,7 @@ const AssignToUser = async(req,res) =>{
   let SourceList = async(req,res) =>{
     try{
         let data = await LeadSourceList()
-        if(data.length>0){
+        if(typeof data !== 'string'){
             let msg = 'Source List'
             statusCode.successResponseWithData(res,msg,data)
         }else{
@@ -585,7 +579,8 @@ const AssignToUser = async(req,res) =>{
 
     }catch(err){
         console.log("Error",err)
-        return err
+        let msg = `Failed to get SourceList.${err}`
+        statusCode.errorResponse(res,msg)
     }
   }
 
@@ -598,8 +593,8 @@ const AssignToUser = async(req,res) =>{
          return data[0]
     
       }catch(err){
-          console.log("DB Error",err)
-          return err
+          console.log("DB Error",err.message)
+          return err.message
       }
 
   }
@@ -607,7 +602,7 @@ const AssignToUser = async(req,res) =>{
   let interactionTypes = async(req,res) =>{
     try{
         let data = await interactionTypeList()
-        if(data.length>0){
+        if(typeof data !== 'string'){
             let msg = 'interaction Type List'
             statusCode.successResponseWithData(res,msg,data)
         }else{
@@ -617,7 +612,8 @@ const AssignToUser = async(req,res) =>{
 
     }catch(err){
         console.log("Error",err)
-        return err
+        let msg = `Failed to get Interaction List.${err}`
+        statusCode.errorResponse(res,msg)
     }
   }
 
@@ -630,8 +626,8 @@ const AssignToUser = async(req,res) =>{
          return data[0]
     
       }catch(err){
-          console.log("DB Error",err)
-          return err
+          console.log("DB Error",err.message)
+          return err.message
       }
 
   }
@@ -640,17 +636,18 @@ const AssignToUser = async(req,res) =>{
     try{
         let leadId = req.body.LeadId
         let data = await history(leadId)
-        if(data.length>0){
+        if(typeof data !== 'string'){
             let msg = 'History List'
             statusCode.successResponseWithData(res,msg,data)
         }else{
-            let msg = 'No history for the lead'
+            let msg = `No history for the lead.${data}`
             statusCode.successResponse(res,msg)
         }
 
     }catch(err){
         console.log("Error",err)
-        statusCode.errorResponse(res,err)
+        let msg = `Failed to get Lead History.${err}`
+        statusCode.errorResponse(res,msg)
     }
   }
 
@@ -665,8 +662,8 @@ const AssignToUser = async(req,res) =>{
              return data[0]
         
           }catch(err){
-              console.log("DB Error",err)
-              return err
+              console.log("DB Error",err.message)
+              return err.message
           }
 
   }
@@ -739,39 +736,39 @@ const AssignToUser = async(req,res) =>{
           if(uniqueEmail.length>0){
           let insertLeads = await insertImportData(allRowsString,ip,location)
           console.log('insertLeads',insertLeads)
-          if(insertLeads.length>1){
+          if(typeof insertLeads !== 'string'){
             let msg = 'List of Leads created Successfully'
             statusCode.successResponseForCreation(res,msg)
-            // fs.unlink(path, (err) => {
-            //     if (err) {
-            //       console.error('Error deleting temporary file:', err);
-            //     } else {
-            //       console.log('Data uploaded and temporary file deleted successfully!');
-            //     }
-            //   });
+            fs.unlink(path, (err) => {
+                if (err) {
+                  console.error('Error deleting temporary file:', err);
+                } else {
+                  console.log('Data uploaded and temporary file deleted successfully!');
+                }
+              });
           }else{
             let msg = 'Failed to create List of Leads' +' '+ insertLeads.cause
             statusCode.successResponse(res,msg)
           }
         }else{
-            // fs.unlink(path, (err) => {
-            //     if (err) {
-            //       console.error('Error deleting temporary file:', err);
-            //     } else {
-            //       console.log('Data uploaded and temporary file deleted successfully!');
-            //     }
-            //   });
-              let msg = 'user already exist or Undefined Values are not accepted'
+            fs.unlink(path, (err) => {
+                if (err) {
+                  console.error('Error deleting temporary file:', err);
+                } else {
+                  console.log('user already exist in the uploaded  and temporary file deleted successfully!');
+                }
+              });
+              let msg = 'user already exist or Undefined Values in the sheets not accepted'
               statusCode.errorResponse(res,msg)
         } 
         
       } catch (error) {
         console.error('Error reading Excel file:', error);
         // Handle error appropriately
-    }   
-    
+    }       
     }catch(err){
         console.log("Error",err)
+        let msg = `Failed to upload a Buil data.${err}`
         statusCode.errorResponse(res,err)
     }
   }
@@ -786,11 +783,10 @@ const AssignToUser = async(req,res) =>{
               })
              console.log('log',data)
              return data
-
     }
     catch(err){
-        console.log("Db Error",err)
-        return err
+        console.log("Db Error",err.message)
+        return err.message
     }
   }
 
@@ -835,8 +831,8 @@ const AssignToUser = async(req,res) =>{
 
     }catch(err){
         console.log('error',err)
-        let msg = 'Error for downloading a Sample Sheet' + "." + err
-        statusCode.errorResponse(res,err)
+        let msg = `Error for downloading a Sample Sheet. ${err}`
+        statusCode.errorResponse(res,msg)
     }
   }
 
@@ -846,7 +842,6 @@ module.exports ={
     leadsList,
     LeadDetails,
     LeadExport,
-    LeadUpdate,
     LeadStatusList,
     AssignToUser ,
     UpdateLeadDetails,

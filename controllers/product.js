@@ -5,17 +5,18 @@ const statusCode = require('../utils/statusCode.js')
 let ProductList = async (req,res) =>{
     try{
         let data = await allProducts()
-        if(data.length>0){
+        if(typeof data !== 'string'){
             let msg = 'Products List'
             statusCode.successResponseWithData(res,msg,data)
         }
         else{
-            let msg = 'Products are Not Exist'
+            let msg = `Products are Not Exist.${data}`
             statusCode.successResponse(res,msg)
         }
     }catch(err){
         console.log("Error",err)
-        statusCode.errorResponse(res,err)
+        let msg = `Failed to get Product List.${err}`
+        statusCode.errorResponse(res,msg)
     }
 }
 
@@ -25,8 +26,8 @@ let allProducts = async()=>{
             type: Sequelize.QueryTypes.RAW})
             return data[0]
     }catch(err){
-        console.log("Error",err)
-        return err
+        console.log("Error",err.message)
+        return err.message
     }
 }
 

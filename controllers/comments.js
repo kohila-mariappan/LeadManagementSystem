@@ -8,16 +8,17 @@ let CreateComment = async(req,res) =>{
         let {LeadId,Comments} = req.body
         let create = await createNewComment(LeadId,Comments)
         console.log('create',create)
-        if(create.length>0){
+        if(typeof create !== 'string'){
             let msg = 'Comments created Successfully'
             statusCode.successResponseForCreation(res,msg)
         }else{
-            let msg = 'Failed to Comments creation'
+            let msg = `Failed to Comments creation.${create}`
             statusCode.successResponse(res,msg)
         }
     }catch(err){
         console.log("error",err)
-        statusCode.errorResponse(res,err)
+        let msg = `Failed to add Comments.${err}`
+        statusCode.errorResponse(res,msg)
     }
 }
 
@@ -36,16 +37,17 @@ let CommentHistory = async(req,res) =>{
     try{
         let LeadId = req.body.LeadId
         let history = await LeadCommentHistory(LeadId)
-        if(history.length>0){
+        if(typeof history !== 'string'){
             let msg = 'User Comments List'
             statusCode.successResponseWithData(res,msg,history)
         }else{
-            let msg = 'Comments are not Exist'
+            let msg = `Comments are not Exist.${history}`
             statusCode.successResponse(res,msg)
         }
     }catch(err){
         console.log('error',err)
-        statusCode.errorResponse(res,err)
+        let msg = `Failed to get history List.${err}`
+        statusCode.errorResponse(res,msg)
     }
 }
 

@@ -11,10 +11,20 @@ const SendEmail = async(req,res) =>{
         console.log('Email',SendEmail)
         if(SendEmail === 'Success'){
             statusCode.successResponse(res,SendEmail)
-            let EmailLog = await ActivityLog(FromMail,ToMail,Subject,Content,CC,Bcc,SendEmail)
+            let log = await ActivityLog(FromMail,ToMail,Subject,Content,CC,Bcc,SendEmail)
+            if(Array.isArray(log)){
+                console.log('log Status',log)
+            }else{
+                console.log('log Status',log)
+            }
         }else{
             statusCode.successResponse(res,SendEmail)
-            let EmailLog = await ActivityLog(FromMail,ToMail,Subject,Content,CC,Bcc,SendEmail)
+            let log = await ActivityLog(FromMail,ToMail,Subject,Content,CC,Bcc,SendEmail)
+            if(Array.isArray(log)){
+                console.log('log Status',log)
+            }else{
+                console.log('log Status',log)
+            }
         }
     }catch(err){
         let msg = err + " " + 'Failed to send Email'
@@ -72,7 +82,7 @@ let EmailHistory = async (req,res) =>{
     try{
         let email = req.body.Email
         let data = await EmailHistoryList(email)
-        if(typeof data !== 'string'){
+        if(Array.isArray){
             let msg = 'Email History'
             statusCode.successResponseWithData(res,msg,data)
         }else{
@@ -105,10 +115,19 @@ let SendSms = async(req,res) =>{
     if(SmsStatus === 'Success'){
         statusCode.successResponse(res,SmsStatus)
         let log = await SMSActivityLog(SenderNo,ReceiverNo,Content,SmsStatus)
-        //let EmailLog = await ActivityLog(FromMail,ToMail,Subject,Content,CC,Bcc,SendEmail)
+        if(Array.isArray(log)){
+            console.log('logStatus',log)
+        }else{
+            console.log('logStatus',log)
+        }
     }else{
         statusCode.successResponse(res,SmsStatus)
         let log = await SMSActivityLog(SenderNo,ReceiverNo,Content,SmsStatus)
+        if(Array.isArray(log)){
+            console.log('logStatus',log)
+        }else{
+            console.log('logStatus',log)
+        }
     }
     }catch(err){
         let msg = `Failed to send SMS.${err}`
@@ -163,7 +182,7 @@ let SMSHistory = async(req,res) =>{
     try{
         let {ReceiverNo} = req.body
         let data = await UserSMSHistory(ReceiverNo)
-        if(typeof data !== 'string'){
+        if(Array.isArray(data)){
             let msg = " SMS History"
             statusCode.successResponseWithData(res,msg,data)
         }else{

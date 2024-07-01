@@ -38,7 +38,7 @@ const leadCreation  = async(req,res) =>{
  
         // if(findLead.length == 0){
         let creationData = await newLead(FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAddress,Source,ReferredBy,Notes)
-         if(typeof creationData !== 'string'){
+         if(Array.isArray(creationData)){
         //     let getId = await getnewId()
         //     if(getId.length>0){
         //         let emailId = getId[0].Email
@@ -119,6 +119,7 @@ let newLead = async (FirstName,LastName,Email,Phone,ProductId,LeadLocation,IPAdd
     try{
         let data = await db.sequelize.query("EXEC createLeads @first = '"+FirstName+"',@last = '"+LastName+"',@email = '"+Email+"',@phne = '"+Phone+"',@prod = '"+ProductId+"',@loc = '"+LeadLocation+"',@ip = '"+IPAddress+"',@source = '"+Source+"',@ref = '"+ReferredBy+"',@not = '"+Notes+"' ",{
             type: Sequelize.QueryTypes.RAW})
+            console.log('data',data)
             return data[0]
 
     }catch(err){
@@ -170,7 +171,7 @@ let sendEmail = async(emailId) =>{
 let leadsList = async(req,res) =>{
     try{
         let LeadsDetails = await getAllLeads()
-        if(typeof LeadsDetails !== 'string'){
+        if(Array.isArray(LeadsDetails)){
             let msg = "Leads List"
             statusCode.successResponseWithData(res,msg,LeadsDetails)
         }else{
@@ -188,10 +189,11 @@ let getAllLeads = async()=>{
     try{
         let data = await db.sequelize.query("EXEC LeadsList ",{
             type: Sequelize.QueryTypes.RAW})
+            console.log('db data',data)
             return data[0]
     }catch(err){
-        console.log("Error",err)
-        return err
+        console.log("DB Error",err.message)
+        return err.message
     }
 }
 
@@ -200,7 +202,7 @@ let LeadDetails = async(req,res) =>{
         let leadId = req.body.leadId
         let data = await leadData(leadId)
         console.log('data',data)
-        if(typeof data !== 'string'){
+        if(Array.isArray(data)){
             let msg = 'Lead Details'
             statusCode.successResponseWithData(res,msg,data)
         }else{
@@ -221,8 +223,8 @@ let leadData = async(leadId) =>{
             console.log('data',data)
             return data[0]
     }catch(err){
-        console.log(`DbError.${err}`)
-        return err
+        console.log(`DbError.${err.message}`)
+        return err.message
     }
 }
 
@@ -239,43 +241,31 @@ let LeadExport = async(req,res) =>{
         //{ header: "LeadId", key: "lead", width: 10 },
         { header: "FirstName", key: "first", width: 15 },
         { header: "LastName", key: "last", width: 15 },
-        { header: "Email", key: "email", width: 25 },
+        { header: "Email", key: "email", width: 35 },
         { header: "Phone", key: "phne", width: 20 },
         { header: "ProductName", key: "pid", width: 20 },
-        //{ header: "InterestLevel", key: "level", width: 15 },
         { header: "Source", key: "src", width: 20 },
         { header: "Status", key: "stat", width: 20 },
         { header: "AssignedToUser", key: "asn", width: 18 },
         { header: "LeadLocation", key: "loc", width: 100 },
         { header: "IPAddress", key: "ip", width: 20 },
-        // { header: "Referredby", key: "ref", width: 15 },
-        // { header: "LastContactDate", key: "con", width: 18 },
-        // { header: "NextStep", key: "next", width: 20 },
-        // { header: "NextFollowUpDate", key: "nextf", width: 20 },
-        // { header: "Notes", key: "note", width: 30 }
     ];
     // Looping through User data
   let counter = 1;
   LeadData.forEach((data) => {
     console.log('LeadData',data,data.LeadId)
     data.s_no = counter;
-    //data.lead = data.LeadID
     data.first= data.FirstName
     data.last = data.LastName
     data.email = data.Email
     data.phne = data.Phone
     data.pid= data.ProductName
-    //data.level = data.InterestLevel
     data.src = data.SourceName
     data.stat = data.StatusName
     data.asn= data.UserName
     data.loc = data.LeadLocation
     data.ip = data.IPAddress
-    // data.ref = data.Referredby
-    // data.con = data.LastContactDate
-    // data.next = data.NextStep
-    // data.nextf = data.NextFollowUpDate
-    // data.note = data.notes
+   
     console.log('sheeetdata',worksheet.addRow(data)); // Add data in worksheet
     counter++;
   });
@@ -317,7 +307,7 @@ let LeadExport = async(req,res) =>{
 let LeadStatusList = async (req,res) =>{
     try{
         let data = await allLeadStatus()
-        if(typeof data !== 'string'){
+        if(Array.isArray(data)){
             let msg = 'Status List'
             statusCode.successResponseWithData(res,msg,data)
         }
@@ -348,9 +338,9 @@ const AssignToUser = async(req,res) =>{
     try{
       let {LeadId,UserId} = req.body      
       let update = await updateUser(LeadId,UserId)
-      console.log('update',update)
-      if(typeof update !== 'string'){
-        let msg = `Lead Assigned To User-${update} Successfully`
+      if(Array.isArray(update)){
+        console.log('update',update,update[0],update[0].userName)
+        let msg = `Lead Assigned To User-${update[0].userName} Successfully`
         statusCode.successResponseForCreation(res,msg)
       }else{
         let msg = `User Updation Failed.${update}`
@@ -373,7 +363,7 @@ const AssignToUser = async(req,res) =>{
         type: Sequelize.QueryTypes.RAW
        })
        console.log('dataupdate',data)
-       return data
+       return data[0]
     }catch(err){
       console.log('DB Error',err.message)
       return err.message
@@ -399,7 +389,7 @@ const AssignToUser = async(req,res) =>{
     try{
         let{LeadId,StatusId,InteractionType,Notes} = req.body
         let data = await updateLeadStatus(LeadId,StatusId,InteractionType,Notes)
-        if(typeof data !== 'string'){
+        if(Array.isArray(data)){
             //let data = await leadStatus(StatusId)
             console.log('data',data)
             //if(data.length>0){
@@ -569,7 +559,7 @@ const AssignToUser = async(req,res) =>{
   let SourceList = async(req,res) =>{
     try{
         let data = await LeadSourceList()
-        if(typeof data !== 'string'){
+        if(Array.isArray(data)){
             let msg = 'Source List'
             statusCode.successResponseWithData(res,msg,data)
         }else{
@@ -602,7 +592,7 @@ const AssignToUser = async(req,res) =>{
   let interactionTypes = async(req,res) =>{
     try{
         let data = await interactionTypeList()
-        if(typeof data !== 'string'){
+        if(Array.isArray(data)){
             let msg = 'interaction Type List'
             statusCode.successResponseWithData(res,msg,data)
         }else{
@@ -636,7 +626,7 @@ const AssignToUser = async(req,res) =>{
     try{
         let leadId = req.body.LeadId
         let data = await history(leadId)
-        if(typeof data !== 'string'){
+        if(Array.isArray(data)){
             let msg = 'History List'
             statusCode.successResponseWithData(res,msg,data)
         }else{
@@ -723,20 +713,21 @@ const AssignToUser = async(req,res) =>{
             let data = removeEmpty[i]
             console.log('email',data[2].text)
             let findLead = await findOldLead(data[2].text)
+            console.log('uniq',findLead)
             if(findLead.length>0){
                 continue
             }else{
                 uniqueEmail.push(data)
             }
           }
-          console.log('uniqueEmail',uniqueEmail.length)
+          console.log('uniqueEmail',uniqueEmail,uniqueEmail.length)
 
           const allRowsString = JSON.stringify(uniqueEmail)
-          console.log('allRowsString',allRowsString.length)
+          console.log('allRowsString',allRowsString,allRowsString.length)
           if(uniqueEmail.length>0){
           let insertLeads = await insertImportData(allRowsString,ip,location)
           console.log('insertLeads',insertLeads)
-          if(typeof insertLeads !== 'string'){
+          if(Array.isArray(insertLeads)){
             let msg = 'List of Leads created Successfully'
             statusCode.successResponseForCreation(res,msg)
             fs.unlink(path, (err) => {

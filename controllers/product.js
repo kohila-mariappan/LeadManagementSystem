@@ -5,7 +5,7 @@ const statusCode = require('../utils/statusCode.js')
 let ProductList = async (req,res) =>{
     try{
         let data = await allProducts()
-        if(typeof data !== 'string'){
+        if(Array.isArray(data)){
             let msg = 'Products List'
             statusCode.successResponseWithData(res,msg,data)
         }

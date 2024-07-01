@@ -5,10 +5,10 @@ const multer = require('multer')
 const upload = require("../middleware/upload");
 //const upload = multer({ dest: "puplic/" });
 let type = upload.single('file');
+const validator = require('../validator/leadValidator')
 
 
-
-router.post('/creation',LeadController.leadCreation)
+router.post('/creation',[validator.leadCreationValidation],LeadController.leadCreation)
 router.get('/list',LeadController.leadsList)
 router.post('/leadDetails',LeadController.LeadDetails)
 router.get('/export',LeadController.LeadExport)

@@ -6,7 +6,7 @@ const statusCode = require('../utils/statusCode.js')
 let UserList = async(req,res) =>{
     try{
       let data = await users()
-      if(typeof data !== 'string'){
+      if(Array.isArray(data)){
         let msg = "User List"
         statusCode.successResponseWithData(res,msg,data)
   

@@ -8,7 +8,7 @@ let CreateComment = async(req,res) =>{
         let {LeadId,Comments} = req.body
         let create = await createNewComment(LeadId,Comments)
         console.log('create',create)
-        if(typeof create !== 'string'){
+        if(Array.isArray(create)){
             let msg = 'Comments created Successfully'
             statusCode.successResponseForCreation(res,msg)
         }else{
@@ -37,7 +37,7 @@ let CommentHistory = async(req,res) =>{
     try{
         let LeadId = req.body.LeadId
         let history = await LeadCommentHistory(LeadId)
-        if(typeof history !== 'string'){
+        if(Array.isArray(history)){
             let msg = 'User Comments List'
             statusCode.successResponseWithData(res,msg,history)
         }else{
